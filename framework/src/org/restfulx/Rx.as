@@ -423,7 +423,7 @@ package org.restfulx {
     }
     
     /**
-     * Clears errors, defaultMetadata and the sessionToken (a half-harted attempt at cleaning up
+     * Clears errors, defaultMetadata and the sessionToken (a half-hearted attempt at cleaning up
      * framework state, a bullet-proof way, which also clears event listeners you may have is to
      * reload the app on logout.)
      */
