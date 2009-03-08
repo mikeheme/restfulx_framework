@@ -33,9 +33,7 @@ package org.restfulx.controllers {
   import mx.rpc.events.ResultEvent;
   
   import org.restfulx.Rx;
-  import org.restfulx.models.RxModel;
   import org.restfulx.utils.RxUtils;
-  import org.restfulx.utils.TypedArray;
   
   /**
    * Custom AIR controller that allows performing arbitrary operations (as 
@@ -53,6 +51,7 @@ package org.restfulx.controllers {
      * @param optsOrOnResult can be either an anonymous object of options or a result handler 
      *  function.
      * @param onFault function to call if there was an error or if unmarshalling fails
+     * @param dbFile to use (defaults to Rx.airDatabaseName)
      */
     public function AuxAIRController(optsOrOnResult:Object = null, onFault:Function = null, dbFile:File = null) {
       if (optsOrOnResult == null) optsOrOnResult = {};
@@ -100,14 +99,25 @@ package org.restfulx.controllers {
      *  controller.findAll(SimpleProperty, ["name LIKE :name AND available = true", {":name": "%2%"}]);
      *  </listing>
      *  
-     *  @param clazz RxModel clazz to do the find on
+     *  @param clazz RxModel clazz to do the find on or the options object
      *  @param conditions list of conditions
      *  @param includeRelationships additional relationships to bring into scope
      *  @param unmarshall boolean indiciating if the result should be unmarshalled into RxModel instances
      *  @param cacheBy RESTful cache method to simulate
      */
-    public function findAll(clazz:Class, conditions:Array = null, includeRelationships:Array = null, 
+    public function findAll(optsOrClazz:Object, conditions:Array = null, includeRelationships:Array = null, 
       unmarshall:Boolean = true, cacheBy:String = "index"):void {
+      var clazz:Class = null;
+      if (optsOrClazz is Class) {
+        clazz = Class(optsOrClazz);
+      } else {
+        if (optsOrClazz.hasOwnProperty("clazz")) clazz = optsOrClazz["clazz"];
+        if (optsOrClazz.hasOwnProperty("conditions")) conditions = optsOrClazz["conditions"];
+        if (optsOrClazz.hasOwnProperty("includeRelationships")) includeRelationships = optsOrClazz["includeRelationships"];
+        if (optsOrClazz.hasOwnProperty("unmarshall")) unmarshall = optsOrClazz["unmarshall"];
+        if (optsOrClazz.hasOwnProperty("cacheBy")) cacheBy = optsOrClazz["cacheBy"];
+      }
+
       var fqn:String = Rx.models.state.types[clazz];
       
       var text:String = "SELECT * FROM " + Rx.models.state.controllers[fqn] + " WHERE sync != 'D'";
@@ -123,7 +133,8 @@ package org.restfulx.controllers {
           statement.parameters[param] = params[param];
         }
       }
-      execute(fqn, statement, unmarshall, cacheBy);
+      
+      execute(fqn, statement, includeRelationships, unmarshall, cacheBy);
     }
     
     /**
@@ -132,16 +143,27 @@ package org.restfulx.controllers {
      *  
      *  @see #findAll
      *  
-     *  @param clazz RxModel clazz to do the find on
+     *  @param clazz RxModel clazz to do the find on or the options object
      *  @param sql the SQL query to run
      *  @param conditions list of conditions
      *  @param unmarshall boolean indiciating if the result should be unmarshalled into RxModel instances
      *  @param cacheBy RESTful cache method to simulate
      *  
      */
-    public function findAllBySQL(clazz:Class, sql:String, unmarshall:Boolean = true, cacheBy:String = "index"):void {
+    public function findAllBySQL(optsOrClazz:Class, sql:String, includeRelationships:Array = null, unmarshall:Boolean = true, 
+      cacheBy:String = "index"):void {
+      var clazz:Class = null;
+      if (optsOrClazz is Class) {
+        clazz = Class(optsOrClazz);
+      } else {
+        if (optsOrClazz.hasOwnProperty("clazz")) clazz = optsOrClazz["clazz"];
+        if (optsOrClazz.hasOwnProperty("sql")) sql = optsOrClazz["sql"];
+        if (optsOrClazz.hasOwnProperty("includeRelationships")) includeRelationships = optsOrClazz["includeRelationships"];
+        if (optsOrClazz.hasOwnProperty("unmarshall")) unmarshall = optsOrClazz["unmarshall"];
+        if (optsOrClazz.hasOwnProperty("cacheBy")) cacheBy = optsOrClazz["cacheBy"];
+      }
       var fqn:String = Rx.models.state.types[clazz];
-      execute(fqn, getSQLStatement(sql), unmarshall, cacheBy);
+      execute(fqn, getSQLStatement(sql), includeRelationships, unmarshall, cacheBy);
     }
 
     protected function initializeConnection(databaseFile:File):void {
@@ -199,8 +221,8 @@ package org.restfulx.controllers {
       }
     }
 
-    private function execute(fqn:String, statement:SQLStatement, unmarshall:Boolean = false, 
-      cacheBy:String = null):void {
+    private function execute(fqn:String, statement:SQLStatement, includeRelationships:Array = null, 
+      unmarshall:Boolean = false, cacheBy:String = null):void {
         
       var responder:ItemResponder = null;
       if (!RxUtils.isEmpty(cacheBy)) {
@@ -229,7 +251,11 @@ package org.restfulx.controllers {
         var data:Array = statement.getResult().data;
         if (data && data.length > 0) {
           data[0]["clazz"] = fqn.split("::")[1];
+          if (includeRelationships) {
+            processIncludedRelationships(includeRelationships, fqn, data); 
+          }
           result = data;
+
         } else {
           // nothing in the DB
           result = new Array;
@@ -237,6 +263,36 @@ package org.restfulx.controllers {
         invokeResponderResult(responder, result);
       } catch (e:Error) {
         responder.fault(e);
+      }
+    }
+    
+    private function processIncludedRelationships(relationships:Array, fqn:String, data:Array):void {
+      for each (var relationship:String in relationships) {
+        var target:String = Rx.models.state.refs[fqn][relationship]["type"];
+        var relType:String = Rx.models.state.refs[fqn][relationship]["relType"];
+        if (target) {
+          for each (var item:Object in data) {
+            var tableName:String = Rx.models.state.controllers[target];
+            var statement:SQLStatement = getSQLStatement("SELECT * FROM " + tableName + 
+              " WHERE sync != 'D' AND " + Rx.models.state.names[fqn]["single"] + "_id = '" + item["id"] + "'");
+            try {
+              statement.execute();
+              
+              var result:Array = statement.getResult().data;
+              if (result && result.length > 0) {
+                result[0]["clazz"] = target.split("::")[1];
+              }
+              
+              if (relType == "HasMany") {
+                item[relationship] = result;
+              } else if (result && result.length > 0) {
+                item[relationship] = result[0];
+              }
+            } catch (e:Error) {
+              throw e;
+            }
+          }
+        }
       }
     }
   }

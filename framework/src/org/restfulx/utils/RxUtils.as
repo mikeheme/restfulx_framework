@@ -49,7 +49,7 @@ package org.restfulx.utils {
       "flash.net::FileReferenceList",
       "org.restfulx.collections::ModelsCollection",
       "org.restfulx.collections::RxCollection",
-      "org.restfulx.models::RxFileReference"
+      "org.restfulx.utils::RxFileReference"
     ];
     
     private static const RESERVED_NAMES:Array = [
@@ -212,9 +212,10 @@ package org.restfulx.utils {
      * @param model model instance to clean-up references for
      * @param fqn FullyQualifiedName of the model
      */
-    public static function cleanupModelReferences(model:Object, fqn:String):void {
+    public static function cleanupModelReferences(model:Object, fqn:String, singleReference:String = ""):void {
       for (var reference:String in Rx.models.state.refs[fqn]) {
-        if (ObjectUtil.hasMetadata(model, reference, "BelongsTo") && model[reference] != null) {
+        if (ObjectUtil.hasMetadata(model, reference, "BelongsTo") && model[reference] != null && 
+          (RxUtils.isEmpty(singleReference) || singleReference == reference)) {
           var referAs:String = Rx.models.state.refs[fqn][reference]["referAs"];
           var referAsPlural:String = referAs;
           var referAsSingle:String = referAs;
@@ -238,6 +239,7 @@ package org.restfulx.utils {
               var items:ModelsCollection = ModelsCollection(model[reference][ref]);
               hasManyRel = true;
               if (items.hasItem(model)) {
+              	Rx.log.debug("remove :" + fqn + " from " + reference + "." + ref);
                 items.removeItem(model);
               }
             }
@@ -456,6 +458,13 @@ package org.restfulx.utils {
           formatter.formatString = "YYYY-MM-DD";
         }
         return formatter.format(object[property] as Date);
+      } else if (object[property] is Number) {
+        var num:Number = Number(object[property]);
+        if (isNaN(num)) {
+          return null;
+        } else {
+          return num.toString();
+        }
       } else {
         return String(object[property]);
       }
@@ -513,6 +522,25 @@ package org.restfulx.utils {
         results = toAdd.slice(0);
         return new RxCollection(results.concat(items));
       }
+    }
+    
+    /**
+     * Checks to see if any of the specified properties contain given text
+     *  
+     * @param text the text string to match
+     * @param item object to check
+     * @param properties an array of item properties to check against
+     *
+     * @return true if any of the properties match text, false otherwise
+     */
+    public static function itemMatches(text:String, item:Object, properties:Array):Boolean {
+      var regexp:RegExp = new RegExp(text, "i");
+      for each (var elm:String in properties) {
+        if (item.hasOwnProperty(elm) && item[elm] != null && (item[elm]).toString().search(regexp) != -1) {
+          return true;
+        }
+      }
+      return false;
     }
     
     /**

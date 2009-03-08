@@ -23,11 +23,13 @@
  ******************************************************************************/
 package restfulx.test.cases {
   import flexunit.framework.TestCase;
-  
-  import org.restfulx.controllers.AuxAIRController;
+
+  import org.restfulx.XRx;  
   import org.restfulx.utils.TypedArray;
   
+  import restfulx.test.models.Project;
   import restfulx.test.models.SimpleProperty;
+  import restfulx.test.models.Task;
 
   public class AuxAIRControllerTest extends TestCase {
         
@@ -36,15 +38,30 @@ package restfulx.test.cases {
     }
     
     public function testFindAll():void {
-      var controller:AuxAIRController = new AuxAIRController(onResult);
-      controller.findAll(SimpleProperty, ["name LIKE :name AND available = true", {":name": "%2%"}]);
+      XRx.air(onFindAll).findAll(SimpleProperty, ["name LIKE :name AND available = true", {":name": "%2%"}]);
     }
     
-    private function onResult(result:Object):void {
+    public function testFindAllWithIncludes():void {
+      XRx.air(onFindAllWithIncludes).findAll(Project, ["name LIKE :name", {":name" : "%4%"}], ["tasks", "contractor"]);
+    }
+    
+    private function onFindAll(result:Object):void {
       assertTrue(result is TypedArray);
       assertEquals(1, TypedArray(result).length);
       assertEquals("SimpleProperty2NameString", SimpleProperty(result[0]).name);
       assertTrue(SimpleProperty(result[0]).available);
+    }
+    
+    private function onFindAllWithIncludes(result:Object):void {
+      assertTrue(result is TypedArray);
+      assertEquals(1, TypedArray(result).length);
+      
+      var project:Project = (result as TypedArray)[0];
+      assertEquals("Project4NameString", project.name);
+      assertEquals(1, project.tasks.length);
+      assertEquals("Task4NameString", Task(project.tasks.getItemAt(0)).name);
+      
+      assertEquals("Contractor4NameString", project.contractor.name);
     }
   }
 }
