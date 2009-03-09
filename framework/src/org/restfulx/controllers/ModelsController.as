@@ -525,6 +525,8 @@ package org.restfulx.controllers {
      * @param useLazyModel if true dependencies marked with [Lazy] will be skipped (not fetched)
      * @param append set this to true if you don't want to nuke target ModelsCollection
      * @param targetServiceId service provider to use
+     * @param hard this is passed to the reset method (if true, reset the object hard, thus clearing the cache; if false,
+     *  simply reset the state)
      */
     public function reload(object:Object, optsOrOnSuccess:Object = null, onFailure:Function = null, nestedBy:Array = null,
       metadata:Object = null, fetchDependencies:Boolean = true, useLazyMode:Boolean = true, append:Boolean = false, 
