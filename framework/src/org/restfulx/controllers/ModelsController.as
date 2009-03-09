@@ -528,8 +528,8 @@ package org.restfulx.controllers {
      */
     public function reload(object:Object, optsOrOnSuccess:Object = null, onFailure:Function = null, nestedBy:Array = null,
       metadata:Object = null, fetchDependencies:Boolean = true, useLazyMode:Boolean = true, append:Boolean = false, 
-      targetServiceId:int = -1):void {
-      reset(object);      
+      targetServiceId:int = -1, hard:Boolean = false):void {
+      reset(object, hard);      
       if (object is Class) {
         index(Class(object), optsOrOnSuccess, onFailure, nestedBy, metadata, fetchDependencies, useLazyMode, append,
           targetServiceId);
