@@ -68,7 +68,7 @@ package org.restfulx.services.air {
 
     protected var sql:Dictionary;
         
-    protected var connection:SQLConnection;
+    public var connection:SQLConnection;
     
     private var pending:Array;
     
@@ -304,7 +304,8 @@ package org.restfulx.services.air {
         } else if (undoRedoFlag == Rx.undoredo.UNDO) {
           sqlStatement.parameters[":sync"] = 'U';
         } else {
-          sqlStatement.parameters[":sync"] = object["sync"];
+          sqlStatement.parameters[":sync"] = 'U';//is there any case we don't want this?
+          //updates weren't syncing when this was: sqlStatement.parameters[":sync"] = object["sync"];
         }
         if (Rx.enableUndoRedo && undoRedoFlag != Rx.undoredo.UNDO) {
           var clone:Object = RxUtils.clone(object);
