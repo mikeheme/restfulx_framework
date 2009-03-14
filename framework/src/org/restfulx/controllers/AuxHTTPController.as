@@ -266,7 +266,7 @@ package org.restfulx.controllers {
         service.method + " and content:" + ((service.request == null) ? 
         "null" : "\r" + ObjectUtil.toString(service.request)));      
 
-      CursorManager.setBusyCursor();
+      //CursorManager.setBusyCursor();
 
       var call:AsyncToken = service.send();
       if (responder) {
@@ -275,7 +275,7 @@ package org.restfulx.controllers {
     }
         
     protected function unmarshall(data:Object):Object {
-      CursorManager.removeBusyCursor();
+      //CursorManager.removeBusyCursor();
       try {
         return serializer.unmarshall(data.result);
       } catch (e:Error) {
