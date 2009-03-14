@@ -246,6 +246,15 @@ package org.restfulx {
      */
     public static var authenticityToken:String;
         
+    /** 
+     * If true, show the busy cursor when making service calls; if false, do not show it.
+     * The default is true since this presents more information to the user.  However, in a
+     * larger application it is sometimes desirable to hide this from users so that they can
+     * begin using the application without dealing with a watch cursor while there are still
+     * many calls happening in the background. 
+     */
+    public static var useBusyCursor:Boolean = true;
+        
     /** default error namespace used by service providers */
     public static const DEFAULT_ERROR_FIELD:String = ":base";
     

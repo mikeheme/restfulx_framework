@@ -593,7 +593,9 @@ package org.restfulx.controllers {
     
     private function invokeService(method:Function, service:IServiceProvider, operand:Object, 
       serviceResponder:ServiceResponder, metadata:Object = null, nestedBy:Array = null):void {
-      //CursorManager.setBusyCursor();
+      if (Rx.useBusyCursor) {
+        CursorManager.setBusyCursor();
+      }
       metadata = setServiceMetadata(metadata);
       dispatchEvent(new ServiceCallStartEvent);   
       method.call(service, operand, serviceResponder, metadata, nestedBy);   
@@ -602,7 +604,9 @@ package org.restfulx.controllers {
     private function invokeCUDService(method:Function, service:IServiceProvider, operand:Object, 
       serviceResponder:ServiceResponder, metadata:Object = null, nestedBy:Array = null, 
       recursive:Boolean = false):void {
-      //CursorManager.setBusyCursor();
+      if (Rx.useBusyCursor) {
+        CursorManager.setBusyCursor();
+      }
       metadata = setServiceMetadata(metadata);
       dispatchEvent(new ServiceCallStartEvent);   
       method.call(service, operand, serviceResponder, metadata, nestedBy, recursive);   

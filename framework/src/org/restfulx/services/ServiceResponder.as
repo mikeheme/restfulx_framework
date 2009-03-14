@@ -73,7 +73,9 @@ package org.restfulx.services {
      * @see mx.rpc.IResponder#result
      */
     public function result(event:Object):void {
-      CursorManager.removeBusyCursor();
+      if (Rx.useBusyCursor) {
+        CursorManager.removeBusyCursor();
+      }
       Rx.models.dispatchEvent(new ServiceCallStopEvent);
       if (handler != null) {
         if (!service.hasErrors(event.result)) {

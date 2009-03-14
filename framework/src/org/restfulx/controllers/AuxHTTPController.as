@@ -265,8 +265,9 @@ package org.restfulx.controllers {
       Rx.log.debug("sending request to URL:" + service.url + " with method: " + 
         service.method + " and content:" + ((service.request == null) ? 
         "null" : "\r" + ObjectUtil.toString(service.request)));      
-
-      //CursorManager.setBusyCursor();
+      if (Rx.useBusyCursor) {
+        CursorManager.setBusyCursor();
+      }
 
       var call:AsyncToken = service.send();
       if (responder) {
@@ -275,7 +276,9 @@ package org.restfulx.controllers {
     }
         
     protected function unmarshall(data:Object):Object {
-      //CursorManager.removeBusyCursor();
+      if (Rx.useBusyCursor) {
+        CursorManager.removeBusyCursor();
+      }
       try {
         return serializer.unmarshall(data.result);
       } catch (e:Error) {
