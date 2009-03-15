@@ -119,7 +119,9 @@ package org.restfulx.services {
      * @see mx.rpc.IResponder#fault
      */
     public function fault(error:Object):void {
-      CursorManager.removeBusyCursor();
+      if (Rx.useBusyCursor) {
+        CursorManager.removeBusyCursor();
+      }
       delete Rx.models.state.waiting[modelType];
       Rx.models.dispatchEvent(new ServiceCallStopEvent);
       invokeOnFailure(error);
