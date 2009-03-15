@@ -359,7 +359,8 @@ package org.restfulx.services.air {
         var data:Array = statement.getResult().data;
         if (data && data.length > 0) {
           data[0]["clazz"] = fqn.split("::")[1];
-          result = unmarshall(data, true);
+          //when this second parameter was true, updating the server from the client nulled out the dependencies
+          result = unmarshall(data, false);
         } else {
           // nothing in the DB
           result = new Array;
