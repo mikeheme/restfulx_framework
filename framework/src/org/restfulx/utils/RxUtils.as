@@ -566,7 +566,7 @@ package org.restfulx.utils {
      */
     public static function navToURL(url:Object, target:String = "_top"):Boolean {
       var request:URLRequest;
-      if (url is String) {
+      if (url is String && !isEmpty(url)) {
         request = new URLRequest(String(url));
       } else if (url is URLRequest) {
         request = URLRequest(url);
