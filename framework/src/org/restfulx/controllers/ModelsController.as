@@ -49,6 +49,8 @@ package org.restfulx.controllers {
    *  <code>CacheController</code> methods.
    */
   public class ModelsController extends EventDispatcher {
+  	
+  	public static var serviceResponder:Class = ServiceResponder;
     
     /**
      * internal cache of fetched model instances maps model 
@@ -214,8 +216,8 @@ package org.restfulx.controllers {
         state.waiting[fqn] = true;
   
         var service:IServiceProvider = getServiceProvider(targetServiceId);
-        var serviceResponder:ServiceResponder = new ServiceResponder(cache.index, service, fqn, onSuccess, onFailure);
-        invokeService(service.index, service, clazz, serviceResponder, metadata, nestedBy);  
+        var responder:IResponder = new serviceResponder(cache.index, service, fqn, onSuccess, onFailure);
+        invokeService(service.index, service, clazz, responder, metadata, nestedBy);  
       }
       return cached;
     }
@@ -332,9 +334,9 @@ package org.restfulx.controllers {
         }
         
         var service:IServiceProvider = getServiceProvider(targetServiceId);
-        var serviceResponder:ServiceResponder = new ServiceResponder(cache.show, service, fqn, onSuccess, onFailure);
+        var responder:IResponder = new serviceResponder(cache.show, service, fqn, onSuccess, onFailure);
 
-        invokeService(service.show, service, object, serviceResponder, metadata, nestedBy);
+        invokeService(service.show, service, object, responder, metadata, nestedBy);
       }
       
       return RxModel(currentInstance);
@@ -391,8 +393,8 @@ package org.restfulx.controllers {
       }
       var fqn:String = getQualifiedClassName(object);
       var service:IServiceProvider = getServiceProvider(targetServiceId);
-      var serviceResponder:ServiceResponder = new ServiceResponder(cache.update, service, fqn, onSuccess, onFailure);
-      invokeCUDService(service.update, service, object, serviceResponder, metadata, nestedBy, recursive);
+      var responder:IResponder = new serviceResponder(cache.update, service, fqn, onSuccess, onFailure);
+      invokeCUDService(service.update, service, object, responder, metadata, nestedBy, recursive);
     }
     
     /**
@@ -432,8 +434,8 @@ package org.restfulx.controllers {
       }
       var fqn:String = getQualifiedClassName(object);
       var service:IServiceProvider = getServiceProvider(targetServiceId);
-      var serviceResponder:ServiceResponder = new ServiceResponder(cache.create, service, fqn, onSuccess, onFailure);
-      invokeCUDService(service.create, service, object, serviceResponder, metadata, nestedBy, recursive);
+      var responder:IResponder = new serviceResponder(cache.create, service, fqn, onSuccess, onFailure);
+      invokeCUDService(service.create, service, object, responder, metadata, nestedBy, recursive);
     }
 
     /**
@@ -473,8 +475,8 @@ package org.restfulx.controllers {
       }
       var fqn:String = getQualifiedClassName(object);
       var service:IServiceProvider = getServiceProvider(targetServiceId);
-      var serviceResponder:ServiceResponder = new ServiceResponder(cache.destroy, service, fqn, onSuccess, onFailure);
-      invokeCUDService(service.destroy, service, object, serviceResponder, metadata, nestedBy, recursive);
+      var responder:IResponder = new serviceResponder(cache.destroy, service, fqn, onSuccess, onFailure);
+      invokeCUDService(service.destroy, service, object, responder, metadata, nestedBy, recursive);
     }
     
     /**
@@ -602,24 +604,24 @@ package org.restfulx.controllers {
     }
     
     private function invokeService(method:Function, service:IServiceProvider, operand:Object, 
-      serviceResponder:ServiceResponder, metadata:Object = null, nestedBy:Array = null):void {
+      responder:IResponder, metadata:Object = null, nestedBy:Array = null):void {
       if (Rx.useBusyCursor) {
         CursorManager.setBusyCursor();
       }
       metadata = setServiceMetadata(metadata);
       dispatchEvent(new ServiceCallStartEvent);   
-      method.call(service, operand, serviceResponder, metadata, nestedBy);   
+      method.call(service, operand, responder, metadata, nestedBy);   
     }
 
     private function invokeCUDService(method:Function, service:IServiceProvider, operand:Object, 
-      serviceResponder:ServiceResponder, metadata:Object = null, nestedBy:Array = null, 
+      responder:IResponder, metadata:Object = null, nestedBy:Array = null, 
       recursive:Boolean = false):void {
       if (Rx.useBusyCursor) {
         CursorManager.setBusyCursor();
       }
       metadata = setServiceMetadata(metadata);
       dispatchEvent(new ServiceCallStartEvent);   
-      method.call(service, operand, serviceResponder, metadata, nestedBy, recursive);   
+      method.call(service, operand, responder, metadata, nestedBy, recursive);   
     }
   }
 }
