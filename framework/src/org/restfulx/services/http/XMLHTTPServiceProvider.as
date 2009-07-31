@@ -40,6 +40,7 @@ package org.restfulx.services.http {
   import org.restfulx.Rx;
   import org.restfulx.collections.ModelsCollection;
   import org.restfulx.controllers.ServicesController;
+  import org.restfulx.models.RxModel;
   import org.restfulx.serializers.ISerializer;
   import org.restfulx.services.IServiceProvider;
   import org.restfulx.services.UndoRedoResponder;
@@ -287,6 +288,61 @@ package org.restfulx.services.http {
         request.url += "?" + urlParams;  
       }
       
+      /**
+       * FIXME:
+       *   There is a bug associates with FileReference. For more information, see
+       *   http://bugs.adobe.com/jira/browse/FP-1946 and http://bugs.adobe.com/jira/browse/FP-1419
+       *   
+       *   Basically, Flash dispatches UPLOAD_COMPLETE_DATA event before all data from the server is received.
+       *   Thus, the restfulx framework is unable to unmarshall the data properly.
+       *   
+       *   Until Adobe fixes the bug, we will make a separate call to get the updated data from the server.
+       * 
+       * Andrew
+       */
+      file.addEventListener(DataEvent.UPLOAD_COMPLETE_DATA, function(event:DataEvent):void {
+        if(object is RxModel)
+          (object as RxModel).reload(function(result:Object):void {
+                
+            if (hasErrors(result)) {
+              if (responder) responder.result(event);
+            } else {           
+              var fqn:String = getQualifiedClassName(object);
+    
+              if (!creating) {
+                var cached:Object = RxUtils.clone(ModelsCollection(Rx.models.cache.data[fqn]).withId(object["id"]));
+              }
+              
+              var response:Object = unmarshall(result);
+              
+              if (Rx.enableUndoRedo && undoRedoFlag != Rx.undoredo.UNDO) {
+                var target:Object;
+                var clone:Object = RxUtils.clone(response);
+                var action:String = "destroy";
+                var fn:Function = Rx.models.cache.destroy;
+                
+                if (!creating) {
+                  target = cached;
+                  target["rev"] = object["rev"];
+                  action = "update";
+                  fn = Rx.models.cache.update;
+                } else {
+                  target = RxUtils.clone(response);
+                }
+                
+                Rx.undoredo.addChangeAction({service: instance, action: action, copy: clone,
+                  elms: [target, new UndoRedoResponder(responder, fn), metadata, 
+                    nestedBy, recursive]});
+              }
+    
+              RxUtils.fireUndoRedoActionEvent(undoRedoFlag);
+              responder.result(new ResultEvent(ResultEvent.RESULT, false, false, response));
+            }
+            
+          });
+      }, false, 0, true);
+      
+      /*  ORIGINAL IMPLEMENTATION
       file.addEventListener(DataEvent.UPLOAD_COMPLETE_DATA, function(event:DataEvent):void {
         var result:Object = event.data;
         if (hasErrors(result)) {
@@ -324,6 +380,7 @@ package org.restfulx.services.http {
           responder.result(new ResultEvent(ResultEvent.RESULT, false, false, response));
         }
       }, false, 0, true);
+      */
       file.addEventListener(IOErrorEvent.IO_ERROR, responder.fault, false, 0, true);
       
       file.upload(request, localName + "[" + file.keyName + "]");
