@@ -140,6 +140,9 @@ package org.restfulx.components.rx {
     private var dropdownClosed:Boolean = true;
 
     private var delayTimer:Timer;
+    
+    // prevent unnecessary search query
+    private var preventSearch:Boolean;
   
     public function RxAutoComplete() {
       super();
@@ -159,6 +162,12 @@ package org.restfulx.components.rx {
       rowCount = 7;
       
       addEventListener("typedTextChange", onTypedTextChange);
+    }
+    
+    private var textChanged:Boolean;
+    override public function set text(value:String):void {
+      textChanged = true;
+      super.text = value;
     }
 
     [Bindable("typedTextChange")]
@@ -235,6 +244,11 @@ package org.restfulx.components.rx {
     }
   
     private function onTypedTextChange(event:Event):void {
+      if(preventSearch) {
+        preventSearch = false;
+        return;
+      }
+      
       if (noResults) dataProvider = new ArrayCollection;
       noResults = false;
 
@@ -245,12 +259,16 @@ package org.restfulx.components.rx {
 
       if (!itemPreselected && !resourceSearched && !searchInProgress) {
         searchInProgress = true;
-        if (delayTimer != null && delayTimer.running) {
+        if (delayTimer && delayTimer.running) {
           delayTimer.stop();
+          delayTimer.reset();
         }
         
-        delayTimer = new Timer(lookupDelay, 1);
-        delayTimer.addEventListener(TimerEvent.TIMER, invokeSearch);
+        if(!delayTimer) {
+          delayTimer = new Timer(lookupDelay, 1);
+          delayTimer.addEventListener(TimerEvent.TIMER, invokeSearch);
+        }
+        
         delayTimer.start();
       }
     }
@@ -260,9 +278,15 @@ package org.restfulx.components.rx {
         searchInProgress = false;
         return;
       }
-      Rx.http(onResourceSearch).invoke(
-        {URL: RxUtils.nestResource(resource), data: {search: typedText, category: filterCategory}, 
+      
+      Rx.http(onResourceSearch).invoke({
+        URL: RxUtils.nestResource(resource), 
+        data: createSearchParameters(), 
         cacheBy: "index"});
+    }
+    
+    protected function createSearchParameters():Object {
+      return {search: typedText, category: filterCategory};
     }
         
     private function onResourceSearch(results:Object):void {
@@ -297,6 +321,8 @@ package org.restfulx.components.rx {
     }
 
     private function onResourceShow(result:Object):void {
+      preventSearch = true;
+      
       dataProvider = Rx.filter(Rx.models.cached(resource), filterFunction);
       dataProvider.refresh();
         
@@ -342,7 +368,10 @@ package org.restfulx.components.rx {
       unscaledHeight:Number):void {
       super.updateDisplayList(unscaledWidth, unscaledHeight);
       
-      if (!clearingText && selectedIndex == -1) {
+      if(textChanged) {
+        textInput.text = super.text;
+        textChanged = false;
+      } else if (!clearingText && selectedIndex == -1) {
         textInput.text = typedText;
       }
       
@@ -403,10 +432,13 @@ package org.restfulx.components.rx {
             if (showOnEnter && !Rx.models.shown(selectedItem)) {
               RxModel(selectedItem).show({onSuccess: onResourceShow, useLazyMode: true});
             } else {
+              onResourceShow(selectedItem);
+              /*
               selectedObject = selectedItem;
               itemShown = true;
               if (clearTextAfterFind) clearTypedText();
               dispatchEvent(new Event("chosenItemChange"));
+              */
             }
           } else {
             textInput.text = _typedText;
