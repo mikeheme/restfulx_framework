@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="restfulx" default="clean.build" basedir=".">
+
+	<property file="${basedir}/build.properties"/>
+
+	<target name="clean.build" depends="clean,compile"/>
+
+	<target name="clean">
+		<delete failonerror="false" file="${basedir}/bin/restfulx.swc"/>
+	</target>
+
+	<target name="compile">
+		<exec executable="${compc.exe}" dir="${basedir}">
+			<arg line="-o '${basedir}/bin/restfulx.swc'"/>
+			<arg line="-sp '${basedir}/src'"/>
+			<arg line="-el '${AIR_LIBS}/airglobal.swc'"/>
+			<arg line="-library-path '${FLEX_SDK_LIBS}'"/>
+			<arg line="-library-path '${FLEX_SDK_LOCALE}/{locale}'"/>
+			<arg line="-library-path '${AIR_LIBS}'"/>
+			<arg line="-library-path '${basedir}/lib'"/>
+			<arg line="-locale 'en_US'"/>
+			<arg line="-allow-source-path-overlap=true"/>
+			<arg line="-target-player=10.0.0"/>
+			<arg line="-keep-as3-metadata+=Resource,HasOne,HasMany,BelongsTo,DateTime,Lazy,Ignored"/>
+			<arg line="-load-config=${basedir}/restfulx-config.xml"/>
+			<arg line="-compiler.warn-no-constructor=false"/>
+		</exec>
+	</target>
+
+</project>
+
