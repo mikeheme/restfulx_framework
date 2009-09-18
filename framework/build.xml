@@ -6,7 +6,7 @@
 	<target name="clean.build" depends="clean,compile"/>
 
 	<target name="clean">
-		<delete failonerror="false" file="${basedir}/bin/restfulx.swc"/>
+		<delete failonerror="false" verbose="true" file="${basedir}/bin/restfulx.swc"/>
 	</target>
 
 	<target name="compile">
