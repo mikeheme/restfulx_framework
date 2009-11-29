@@ -22,14 +22,18 @@
  * Redistributions of files must retain the above copyright notice.
  ******************************************************************************/
 package org.restfulx.services {
+  import mx.collections.ArrayCollection;
+  
   import org.restfulx.Rx;
-  import org.restfulx.services.GenericServiceErrors;
   import org.restfulx.utils.RxUtils;
   
   /**
    * HTTPServiceProvider specific IServiceErrors implementation.
    */
   public class XMLServiceErrors extends GenericServiceErrors {
+    
+    public var errorsArray:ArrayCollection;
+    
     /**
      * Transforms XML encoded errors into an array of Validation results
      * mapped by field name.
@@ -38,7 +42,9 @@ package org.restfulx.services {
      */   
     public function XMLServiceErrors(result:XML) {
       super();
+      errorsArray = new ArrayCollection();
       for each (var error:XML in result.error) {
+      	errorsArray.addItem(error);
         var field:String = error.@field;
         if (RxUtils.isEmpty(field)) field = Rx.DEFAULT_ERROR_FIELD;
         
